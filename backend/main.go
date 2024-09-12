@@ -1,8 +1,8 @@
 package main
 
 import (
+	"back-end/database"
 	"back-end/routes"
-
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -11,11 +11,13 @@ const (
 )
 
 func main() {
+	database.ConnectDB()
 	app := routes.Config{
 		Server: fiber.New(),
 	}
 
 	app.SetupMiddleWare()
 	app.SetupRoutes()
-	app.Listen(PORT, true)
+	app.Listen(PORT)
+
 }

@@ -1,13 +1,16 @@
 #file: noinspection ComposeUnknownValues
 services:
   backend:
-    image: ggorockee/backend:240912_2253
+    image: ggorockee/backend:240913_0123
     restart: always
     ports:
       - "3000:3000"
     deploy:
       mode: replicated
       replicas: 1
+    env_file:
+      - path: .mysql.env
+        required: true
 
   mysql:
     image: "mysql:oraclelinux9"
@@ -19,7 +22,7 @@ services:
       replicas: 1
     env_file:
       - path: .mysql.env
-        required: false
+        required: true
     volumes:
       - ./db-data/mysql:/var/lib/mysql
 
