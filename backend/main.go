@@ -1,23 +1,26 @@
 package main
 
 import (
-	"back-end/database"
-	"back-end/routes"
-	"github.com/gofiber/fiber/v2"
-)
-
-const (
-	PORT string = "3000"
+	"back-end/internals/core/handlers"
+	"back-end/internals/core/repositories"
+	"back-end/internals/core/server"
+	"back-end/internals/core/services"
 )
 
 func main() {
-	database.ConnectDB()
-	app := routes.Config{
-		Server: fiber.New(),
-	}
+	// repositories
+	userRepository := repositories.NewUserRepository()
 
-	app.SetupMiddleWare()
-	app.SetupRoutes()
-	app.Listen(PORT)
+	// services
+	userService := services.NewUserService(userRepository)
 
+	// handlers
+	userHandlers := handlers.NewUserHandlers(userService)
+
+	// server
+	httpServer := server.NewServer(
+		userHandlers,
+	)
+
+	httpServer.Initialize()
 }
