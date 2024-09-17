@@ -1,13 +1,23 @@
 package ports
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"back-end/internals/core/domain"
 
-type UserService interface {
-	Register(email string, password string, passwordConfirm string) error
-}
+	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v5"
+)
 
 type UserRepository interface {
-	Register(email string, password string) error
+	Register(email, password string) error
+	Login(email, password string) error
+	Logout(id int) error
+	ValidToken(t *jwt.Token, id string) bool
+	validUser(id string, p string) bool
+	GetFindById(id int) (*domain.User, error)
+}
+
+type UserService interface {
+	Register(email, password, conformPassword string) error
 }
 
 type UserHandler interface {

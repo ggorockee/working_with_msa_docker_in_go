@@ -1,31 +1,48 @@
 package handlers
 
 import (
+	"back-end/internals/core/helpers"
 	"back-end/internals/core/ports"
-
 	"github.com/gofiber/fiber/v2"
+	"net/http"
 )
 
 type UserHandler struct {
-	userService ports.UserService
+	service ports.UserService
 }
 
-// var _ ports.UserHandlers = (*UserHandlers)(nil)
-
-func NewUserHandlers(userService ports.UserService) *UserHandler {
-	return &UserHandler{
-		userService: userService,
-	}
+// UserHandler 초기화
+func NewUserHandler(service ports.UserService) *UserHandler {
+	return &UserHandler{service: service}
 }
 
+// UserHandler 인터페이스사용
 func (h *UserHandler) Register(c *fiber.Ctx) error {
-	var email string
-	var password string
-	var passwordConfirm string
+	var registerUserPayload helpers.RegisterUserPayload
 
-	err := h.userService.Register(email, password, passwordConfirm)
-	if err != nil {
-		return err
+	if err := c.BodyParser(&registerUserPayload); err != nil {
+		jsonResp := helpers.JsonResponse{
+			Error:   true,
+			Message: err.Error(),
+			Data:    nil,
+		}
+		return c.Status(http.StatusBadRequest).JSON(jsonResp)
 	}
+	// Extract the body and get the email and password
+	err := h.service.Register(
+		registerUserPayload.Email,
+		registerUserPayload.Password,
+		registerUserPayload.PasswordConfirm,
+	)
+
+	if err != nil {
+		jsonResp := helpers.JsonResponse{
+			Error:   true,
+			Message: err.Error(),
+			Data:    nil,
+		}
+		return c.Status(http.StatusBadRequest).JSON(jsonResp)
+	}
+
 	return nil
 }

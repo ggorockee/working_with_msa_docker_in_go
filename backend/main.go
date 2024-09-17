@@ -1,6 +1,7 @@
 package main
 
 import (
+	"back-end/database"
 	"back-end/internals/core/handlers"
 	"back-end/internals/core/repositories"
 	"back-end/internals/core/server"
@@ -8,19 +9,22 @@ import (
 )
 
 func main() {
-	// repositories
+	database.Connect()
 	userRepository := repositories.NewUserRepository()
-
-	// services
 	userService := services.NewUserService(userRepository)
+	userHandlers := handlers.NewUserHandler(userService)
 
-	// handlers
-	userHandlers := handlers.NewUserHandlers(userService)
+	healthCheckHandlers := handlers.NewHealthCheckHandler()
 
-	// server
+	memoRepository := repositories.NewMemoRepository()
+	memoService := services.NewMemoService(memoRepository)
+	memoHandlers := handlers.NewMemoHandler(memoService)
+
 	httpServer := server.NewServer(
 		userHandlers,
+		healthCheckHandlers,
+		memoHandlers,
 	)
-
-	httpServer.Initialize()
+	httpServer.SetupRoute()
+	httpServer.Listen()
 }

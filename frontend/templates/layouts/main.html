@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en">
+<head>
+    {{ template "partials/head.partial" . }}
+</head>
+<body class="d-flex align-items-center py-4 bg-body-tertiary">
+{{ template "partials/header.partial" . }}
+
+{{embed}}
+
+{{ template "partials/footer.partial" . }}
+
+{{ template "partials/script.partial" . }}
+</body>
+</html>

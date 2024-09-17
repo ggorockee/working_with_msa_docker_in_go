@@ -1,12 +1,10 @@
 package repositories
 
 import (
-	"back-end/internals/core/ports"
-	"fmt"
-	"log"
-	"os"
+	"back-end/database"
+	"back-end/internals/core/domain"
 
-	"gorm.io/driver/mysql"
+	"github.com/golang-jwt/jwt"
 	"gorm.io/gorm"
 )
 
@@ -14,76 +12,33 @@ type UserRepository struct {
 	conn *gorm.DB
 }
 
-var _ ports.UserRepository = (*UserRepository)(nil)
-
-type DBConfig struct {
-	userId   string
-	password string
-	host     string
-	port     string
-	dbName   string
-}
-
-func (config DBConfig) String() string {
-	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
-		config.userId,
-		config.password,
-		config.host,
-		config.port,
-		config.dbName,
-	)
-}
-
-func getEnv(key string, defaultValue string) string {
-	envValue := os.Getenv(key)
-	if envValue == "" {
-		return defaultValue
-	}
-
-	return envValue
-
-}
-
+// UserRepository를 초기화
 func NewUserRepository() *UserRepository {
-
-	dbConfig := DBConfig{
-		getEnv("MYSQL_USER", "ggorockee"),
-		getEnv("MYSQL_PASSWORD", "ggorockee"),
-		getEnv("MYSQL_HOST", "localhost"),
-		getEnv("MYSQL_PORT", "3306"),
-		getEnv("MYSQL_DATABASE", "ggorockee"),
-	}
-
-	db, err := gorm.Open(mysql.Open(dbConfig.String()), &gorm.Config{})
-	if err != nil {
-		log.Println("failed to connect to database \n", err)
-		os.Exit(2)
-	}
-
-	log.Println("successfully db connected!")
-
-	if err := db.AutoMigrate(
-	// models
-	); err != nil {
-		log.Println("failed to migrate to database\n", err)
-	}
-
 	return &UserRepository{
-		conn: db,
+		conn: database.Connect().Conn,
 	}
 }
 
-func (r *UserRepository) Register(email string, password string) error {
-	requestPayload := struct {
-		email    string
-		password string
-	}{
-		email:    email,
-		password: password,
+// UserRepository의 인터페이스를 구현
+func (r *UserRepository) Register(email, password string) error {
+	// UserRepository에는 *gorm.DB가 conn의 이름으로 있고
+	// 이걸 이용해서 찾을 수 있음
+
+	user := domain.User{
+		Email:    email,
+		Password: password,
 	}
-	if err := r.conn.Create(&requestPayload).Error; err != nil {
+
+	err := r.conn.Create(&user).Error
+	if err != nil {
 		return err
 	}
 
 	return nil
 }
+
+func (r *UserRepository) Login(email, password string) error       {}
+func (r *UserRepository) Logout(id int) error                      {}
+func (r *UserRepository) ValidToken(t *jwt.Token, id string) bool  {}
+func (r *UserRepository) validUser(id string, p string) bool       {}
+func (r *UserRepository) GetFindById(id int) (*domain.User, error) {}
