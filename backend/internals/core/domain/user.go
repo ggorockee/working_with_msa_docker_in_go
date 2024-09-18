@@ -5,12 +5,16 @@ import (
 )
 
 type User struct {
-	Id        uint      `json:"id" gorm:"primaryKey;unique;not null" mapstructure:"id"`
-	Email     string    `json:"email" mapstructure:"email"`
+	Id        uint      `json:"id" gorm:"primaryKey" mapstructure:"id"`
+	Email     string    `json:"email" gorm:"unique" mapstructure:"email"`
 	Password  string    `json:"-" gorm:"type:varchar(255)"`
 	Name      string    `json:"name" mapstructure:"name"`
 	CreatedAt time.Time `json:"created_at" mapstructure:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" mapstructure:"updated_at"`
+
+	// foreign key
+	Memos []Memo `gorm:"foreignKey:UserRefer"`
+
 }
 
 var UserModel User

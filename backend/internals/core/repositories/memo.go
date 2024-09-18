@@ -21,15 +21,15 @@ func NewMemoRepository() *MemoRepository {
 	}
 }
 
+
 func (r *MemoRepository) GetModel() domain.Memo {
 	return r.model
 }
 
-func (r *MemoRepository) Create(title, content string) error {
-	r.model.Title = title
-	r.model.Content = content
+func (r *MemoRepository) Create(createInput *domain.Memo) error {
+	
 
-	if err := r.conn.Create(&r.model).Error; err != nil {
+	if err := r.conn.Create(createInput).Error; err != nil {
 		return err
 	}
 	return nil

@@ -8,6 +8,9 @@ type Memo struct {
 	Content   string    `json:"content" mapstructure:"content"`
 	UpdatedAt time.Time `json:"updated_at" mapstructure:"updated_at"`
 	CreatedAt time.Time `json:"created_at"`
+
+	// foreign key
+	UserRefer int `json:"user_id" gorm:"not null"`
 }
 
 var MemoModel Memo

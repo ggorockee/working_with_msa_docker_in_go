@@ -1,12 +1,17 @@
 package handlers
 
 import (
+	"back-end/internals/core/domain"
 	"back-end/internals/core/helpers"
 	"back-end/internals/core/ports"
+	"back-end/internals/core/utils"
+	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type MemoHandler struct {
@@ -18,6 +23,17 @@ func NewMemoHandler(service ports.MemoService) *MemoHandler {
 }
 
 func (h *MemoHandler) Create(c *fiber.Ctx) error {
+	userId, err := h.GetCurrentLoginUserId(c)
+	if err != nil {
+		jsonResp := helpers.JsonResponse{
+			Error:   true,
+			Message: err.Error(),
+			Data:    nil,
+		}
+		return c.Status(http.StatusUnauthorized).JSON(jsonResp)
+	}
+
+	
 	var requestPayload helpers.CreateMemoPayload
 	if err := c.BodyParser(&requestPayload); err != nil {
 		jsonResp := helpers.JsonResponse{
@@ -28,10 +44,22 @@ func (h *MemoHandler) Create(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).JSON(jsonResp)
 	}
 
-	if err := h.service.Create(fiber.Map{
-		"title":   requestPayload.Title,
-		"content": requestPayload.Content,
-	}); err != nil {
+	var memo domain.Memo
+	
+	memo.UserRefer = userId
+	
+	if requestPayload.Content != "" {
+		memo.Content = requestPayload.Content
+		memo.UpdatedAt = time.Now()
+	}
+
+	if requestPayload.Title != "" {
+		memo.Title = requestPayload.Title
+		memo.UpdatedAt = time.Now()
+	}
+
+
+	if err := h.service.Create(&memo); err != nil {
 		jsonResp := helpers.JsonResponse{
 			Error:   true,
 			Message: err.Error(),
@@ -140,4 +168,14 @@ func (h *MemoHandler) Delete(c *fiber.Ctx) error {
 		Data:    nil,
 	}
 	return c.Status(http.StatusOK).JSON(jsonResp)
+}
+
+func (h *MemoHandler) GetCurrentLoginUserId(c *fiber.Ctx) (userId int, err error) {
+	token := c.Locals("user").(*jwt.Token)
+	if token == nil {
+		return 0, errors.New("cannot find user")
+	}
+
+	userId = utils.GetUserIdFromJwtToken(token)
+	return userId, nil
 }

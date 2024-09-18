@@ -4,9 +4,6 @@ import (
 	"back-end/internals/core/domain"
 	"back-end/internals/core/helpers"
 	"back-end/internals/core/ports"
-
-	"github.com/gofiber/fiber/v2"
-	"github.com/mitchellh/mapstructure"
 )
 
 type MemoService struct {
@@ -19,18 +16,13 @@ func NewMemoService(repo ports.MemoRepository) *MemoService {
 	}
 }
 
-func (s *MemoService) Create(createInput fiber.Map) error {
-
-	model := s.memoRepo.GetModel()
-	if err := mapstructure.Decode(createInput, &model); err != nil {
-		return err
-	}
-
-	if err := s.memoRepo.Create(model.Title, model.Content); err != nil {
+func (s *MemoService) Create(createInput *domain.Memo) error {
+	if err := s.memoRepo.Create(createInput); err != nil {
 		return err
 	}
 	return nil
 }
+
 
 func (s *MemoService) GetAll() ([]*domain.Memo, error) {
 	memos, err := s.memoRepo.GetAll()
@@ -58,3 +50,5 @@ func (s *MemoService) Delete(id int) error {
 
 	return nil
 }
+
+
