@@ -21,3 +21,12 @@ type JsonResponse struct {
 	Message string `json:"message"`
 	Data    any    `json:"data,omitempty"`
 }
+
+type LoginInput struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type UpdateUserPayload struct {
+	Name string `json:"name"`
+}

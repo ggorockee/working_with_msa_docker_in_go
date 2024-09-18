@@ -13,6 +13,7 @@ type Server struct {
 	userHandler        ports.UserHandler
 	healthCheckHandler ports.HealthCheckHandler
 	memoHandler        ports.MemoHandler
+	jwtHandler	ports.JWTHandler
 }
 
 const PORT = "3000"
@@ -28,11 +29,13 @@ func NewServer(
 	userHandler ports.UserHandler,
 	healthCheckHandler ports.HealthCheckHandler,
 	memoHandler ports.MemoHandler,
+	jwtHandler ports.JWTHandler,
 ) *Server {
 	server = &Server{
 		userHandler:        userHandler,
 		healthCheckHandler: healthCheckHandler,
 		memoHandler:        memoHandler,
+		jwtHandler: jwtHandler,
 	}
 	return server
 }
@@ -47,11 +50,14 @@ func (s *Server) SetupRoute() {
 
 	// userroute
 	userRoutes := v1.Group("/users")
-	userRoutes.Post("/register", s.userHandler.Register)
+	userRoutes.Post("/", s.userHandler.Register)
+	userRoutes.Put("/:userId", s.userHandler.Update)
+	userRoutes.Patch("/:userId", s.jwtHandler.AuthProtected(), s.userHandler.Update)
+	userRoutes.Post("/login", s.userHandler.Login)
 
 	// memoroute
 	memoRoutes := v1.Group("/memos")
-	memoRoutes.Post("/", s.memoHandler.Create)
+	memoRoutes.Post("/", s.jwtHandler.AuthProtected(), s.memoHandler.Create)
 	memoRoutes.Get("/", s.memoHandler.GetAll)
 	memoRoutes.Put("/:memoId", s.memoHandler.Update)
 	memoRoutes.Patch("/:memoId", s.memoHandler.Update)
