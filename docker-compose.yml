@@ -1,14 +1,14 @@
 #file: noinspection ComposeUnknownValues
 services:
-#  backend:
-#    image: ggorockee/backend:240913_1325
-#    restart: always
-#    ports:
-#      - "3000:3000"
-#    deploy:
-#      mode: replicated
-#      replicas: 1
-#    env_file: .mysql.env
+  backend:
+    image: ggorockee/backend:240919_1658
+    restart: always
+    ports:
+      - "3000:3000"
+    deploy:
+      mode: replicated
+      replicas: 1
+    env_file: .mysql.env
         
 
   mysql:
