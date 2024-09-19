@@ -12,14 +12,14 @@ import (
 )
 
 type UserRepository struct {
-	conn *gorm.DB
+	conn  *gorm.DB
 	model *domain.User
 }
 
 // UserRepository를 초기화
 func NewUserRepository() *UserRepository {
 	return &UserRepository{
-		conn: database.Connect().Conn,
+		conn:  database.Connect().Conn,
 		model: &domain.UserModel,
 	}
 }
@@ -43,15 +43,11 @@ func (r *UserRepository) Register(email, password string) error {
 	}
 
 	user.Password = string(hashedPassword)
-	
-
 
 	err = r.conn.Create(&user).Error
 	if err != nil {
 		return err
 	}
-
-	
 
 	return nil
 }
@@ -60,27 +56,25 @@ func (r *UserRepository) Register(email, password string) error {
 // 	return nil
 // }
 
-
 func (r *UserRepository) GetModel() *domain.User {
 	return r.model
 }
 
-
-func (r *UserRepository) ValidToken(t *jwt.Token, id int) bool  {
+func (r *UserRepository) ValidToken(t *jwt.Token, id int) bool {
 
 	claims := t.Claims.(jwt.MapClaims)
 	uid := int(claims["user_id"].(float64))
 
 	return uid == id
 }
-func (r *UserRepository) ValidUser(id string, p string) bool       {
+func (r *UserRepository) ValidUser(id string, p string) bool {
 	user := r.GetModel()
 	if err := r.conn.First(user, id).Error; err != nil {
 		return false
 	}
 
 	return true
-	
+
 }
 
 func (r *UserRepository) GetFindById(id int) (*domain.User, error) {
@@ -93,7 +87,6 @@ func (r *UserRepository) GetFindById(id int) (*domain.User, error) {
 	return user, nil
 }
 
-
 func (r *UserRepository) GetFindByEmail(email string) (*domain.User, error) {
 	user := r.GetModel()
 
@@ -104,19 +97,17 @@ func (r *UserRepository) GetFindByEmail(email string) (*domain.User, error) {
 	return user, nil
 }
 
-
 // PasswordMatches uses Go's bcrypt package to compare a user supplied password
 // with the hash we have stored for a given user in the database. If the password
 // and hash match, we return true; otherwise, we return false.
 func (r *UserRepository) PasswordMatches(hashedPassword string, plainText string) (bool, error) {
-	
-	
+
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(plainText))
 	if err != nil {
 		switch {
 		case errors.Is(err, bcrypt.ErrMismatchedHashAndPassword):
 			// invalid password
-			return false, nil
+			return false, errors.New("password not matched")
 		default:
 			return false, err
 		}

@@ -9,19 +9,19 @@ import (
 
 type MemoRepository interface {
 	GetModel() domain.Memo
-	Create(createInput *domain.Memo) error
+	GetAll(referOption ...helpers.Refer) ([]*domain.Memo, error)
+	Create(createInput helpers.CreateMemoPayload, referOption ...helpers.Refer) error
 	Update(id int, updateUser helpers.UpdateMemoPayload) (*domain.Memo, error)
 	GetById(id int) (*domain.Memo, error)
-	GetAll() ([]*domain.Memo, error)
 	Delete(id int) error
 }
 
 type MemoService interface {
-	Create(createInput *domain.Memo) error
+	GetAll(referOption ...helpers.Refer) ([]*domain.Memo, error)
+	Get(id int) (*domain.Memo, error)
+	Create(createInput helpers.CreateMemoPayload, referOption ...helpers.Refer) error
 	Update(id int, updateUser helpers.UpdateMemoPayload) (*domain.Memo, error)
-	GetAll() ([]*domain.Memo, error)
 	Delete(id int) error
-	
 }
 
 type MemoHandler interface {

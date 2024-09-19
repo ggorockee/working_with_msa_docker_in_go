@@ -61,7 +61,6 @@ func (h *UserHandler) Login(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).JSON(jsonResp)
 	}
 
-
 	token, err := h.service.Login(loginInput.Email, loginInput.Password)
 
 	if err != nil {
@@ -95,8 +94,8 @@ func (h *UserHandler) Update(c *fiber.Ctx) error {
 	if c.Locals("user") == nil {
 		// local 값이 없으면
 		c.Locals("user", "anonymousUser")
-		
-	}else{
+
+	} else {
 		token := c.Locals("user").(*jwt.Token)
 		if !h.service.ValidToken(token, id) {
 			jsonResp := helpers.JsonResponse{
@@ -134,5 +133,5 @@ func (h *UserHandler) Update(c *fiber.Ctx) error {
 		Data:    updatePayload,
 	}
 	return c.Status(http.StatusOK).JSON(jsonResp)
-	
+
 }

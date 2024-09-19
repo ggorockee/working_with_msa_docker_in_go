@@ -4,6 +4,7 @@ import (
 	"back-end/internals/core/domain"
 	"back-end/internals/core/helpers"
 	"back-end/internals/core/ports"
+	"errors"
 )
 
 type MemoService struct {
@@ -16,16 +17,26 @@ func NewMemoService(repo ports.MemoRepository) *MemoService {
 	}
 }
 
-func (s *MemoService) Create(createInput *domain.Memo) error {
-	if err := s.memoRepo.Create(createInput); err != nil {
+func (s *MemoService) Create(createInput helpers.CreateMemoPayload, referOption ...helpers.Refer) error {
+	var refer helpers.Refer
+	if len(referOption) > 0 {
+		refer = referOption[0]
+	}
+	if err := s.memoRepo.Create(createInput, refer); err != nil {
 		return err
 	}
 	return nil
 }
 
+func (s *MemoService) GetAll(referOption ...helpers.Refer) ([]*domain.Memo, error) {
+	refer := helpers.NewRefer()
+	if len(referOption) > 0 {
+		*refer = referOption[0]
+	} else {
+		return nil, errors.New("referOption must provided")
+	}
 
-func (s *MemoService) GetAll() ([]*domain.Memo, error) {
-	memos, err := s.memoRepo.GetAll()
+	memos, err := s.memoRepo.GetAll(*refer)
 	if err != nil {
 		return nil, err
 	}
@@ -51,4 +62,11 @@ func (s *MemoService) Delete(id int) error {
 	return nil
 }
 
+func (s *MemoService) Get(id int) (*domain.Memo, error) {
+	memo, err := s.memoRepo.GetById(id)
+	if err != nil {
+		return nil, err
+	}
 
+	return memo, nil
+}

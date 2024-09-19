@@ -22,15 +22,14 @@ func main() {
 	memoService := services.NewMemoService(memoRepository)
 	memoHandlers := handlers.NewMemoHandler(memoService)
 
-	
 	jwtService := services.NewJWTService(configs.New().JWTSecret)
-	midlewWareHandler := handlers.NewJWTHandler(jwtService)
+	middleWareHandler := handlers.NewJWTHandler(jwtService)
 
 	httpServer := server.NewServer(
 		userHandlers,
 		healthCheckHandlers,
 		memoHandlers,
-		midlewWareHandler,
+		middleWareHandler,
 	)
 	httpServer.SetupRoute()
 	httpServer.Listen()

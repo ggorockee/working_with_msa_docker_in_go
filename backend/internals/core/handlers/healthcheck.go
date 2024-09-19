@@ -2,8 +2,9 @@ package handlers
 
 import (
 	"back-end/internals/core/helpers"
-	"github.com/gofiber/fiber/v2"
 	"net/http"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 type HealthCheckHandler struct {

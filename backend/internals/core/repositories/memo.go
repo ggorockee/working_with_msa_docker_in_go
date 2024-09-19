@@ -4,6 +4,7 @@ import (
 	"back-end/database"
 	"back-end/internals/core/domain"
 	"back-end/internals/core/helpers"
+	"errors"
 	"time"
 
 	"gorm.io/gorm"
@@ -21,15 +22,23 @@ func NewMemoRepository() *MemoRepository {
 	}
 }
 
-
 func (r *MemoRepository) GetModel() domain.Memo {
 	return r.model
 }
 
-func (r *MemoRepository) Create(createInput *domain.Memo) error {
-	
+func (r *MemoRepository) Create(createInput helpers.CreateMemoPayload, referOption ...helpers.Refer) error {
+	var refer helpers.Refer
 
-	if err := r.conn.Create(createInput).Error; err != nil {
+	if len(referOption) > 0 {
+		refer = referOption[0]
+	}
+
+	memo := r.GetModel()
+	memo.Content = createInput.Content
+	memo.Title = createInput.Title
+	memo.UserRefer = refer.UserId()
+
+	if err := r.conn.Create(&memo).Error; err != nil {
 		return err
 	}
 	return nil
@@ -44,12 +53,24 @@ func (r *MemoRepository) GetById(id int) (*domain.Memo, error) {
 	return &r.model, nil
 }
 
-func (r *MemoRepository) GetAll() ([]*domain.Memo, error) {
-	var memos []*domain.Memo
+func (r *MemoRepository) GetAll(referOption ...helpers.Refer) ([]*domain.Memo, error) {
+	refer := helpers.NewRefer()
 
-	if err := r.conn.Find(&memos).Error; err != nil {
+	if len(referOption) > 0 {
+		*refer = referOption[0]
+	} else {
+		return nil, errors.New("could not get user ID")
+	}
+
+	var memos []*domain.Memo
+	if err := r.conn.Where("user_refer = ?", refer.UserId()).Find(&memos).Error; err != nil {
 		return nil, err
 	}
+
+	// if err := r.conn.Find(&memos).Error; err != nil {
+	// 	return nil, err
+	// }
+	// return memos, nil
 	return memos, nil
 }
 

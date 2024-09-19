@@ -3,7 +3,7 @@ package domain
 import "time"
 
 type Memo struct {
-	Id        uint      `json:"id" gorm:"primaryKey:unique;not null"`
+	Id        uint      `json:"id" gorm:"primaryKey"`
 	Title     string    `json:"title" mapstructure:"title"`
 	Content   string    `json:"content" mapstructure:"content"`
 	UpdatedAt time.Time `json:"updated_at" mapstructure:"updated_at"`
@@ -14,3 +14,7 @@ type Memo struct {
 }
 
 var MemoModel Memo
+
+func (m *Memo) CheckOwner(userId int) bool {
+	return int(m.Id) == userId
+}

@@ -7,13 +7,14 @@ import (
 	"os"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 )
 
 type Server struct {
 	userHandler        ports.UserHandler
 	healthCheckHandler ports.HealthCheckHandler
 	memoHandler        ports.MemoHandler
-	jwtHandler	ports.JWTHandler
+	jwtHandler         ports.JWTHandler
 }
 
 const PORT = "3000"
@@ -35,13 +36,14 @@ func NewServer(
 		userHandler:        userHandler,
 		healthCheckHandler: healthCheckHandler,
 		memoHandler:        memoHandler,
-		jwtHandler: jwtHandler,
+		jwtHandler:         jwtHandler,
 	}
 	return server
 }
 
 func (s *Server) SetupRoute() {
 	app = fiber.New()
+	app.Use(recover.New())
 
 	v1 := app.Group("/api/v1")
 
@@ -51,14 +53,15 @@ func (s *Server) SetupRoute() {
 	// userroute
 	userRoutes := v1.Group("/users")
 	userRoutes.Post("/", s.userHandler.Register)
-	userRoutes.Put("/:userId", s.userHandler.Update)
+	userRoutes.Put("/:userId", s.jwtHandler.AuthProtected(), s.userHandler.Update)
 	userRoutes.Patch("/:userId", s.jwtHandler.AuthProtected(), s.userHandler.Update)
 	userRoutes.Post("/login", s.userHandler.Login)
 
 	// memoroute
-	memoRoutes := v1.Group("/memos")
-	memoRoutes.Post("/", s.jwtHandler.AuthProtected(), s.memoHandler.Create)
+	memoRoutes := v1.Group("/memos", s.jwtHandler.AuthProtected())
+	memoRoutes.Post("/", s.memoHandler.Create)
 	memoRoutes.Get("/", s.memoHandler.GetAll)
+	memoRoutes.Get("/:memoId", s.memoHandler.Get)
 	memoRoutes.Put("/:memoId", s.memoHandler.Update)
 	memoRoutes.Patch("/:memoId", s.memoHandler.Update)
 	memoRoutes.Delete("/:memoId", s.memoHandler.Delete)

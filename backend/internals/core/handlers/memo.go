@@ -1,14 +1,12 @@
 package handlers
 
 import (
-	"back-end/internals/core/domain"
 	"back-end/internals/core/helpers"
 	"back-end/internals/core/ports"
 	"back-end/internals/core/utils"
 	"errors"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
@@ -33,7 +31,6 @@ func (h *MemoHandler) Create(c *fiber.Ctx) error {
 		return c.Status(http.StatusUnauthorized).JSON(jsonResp)
 	}
 
-	
 	var requestPayload helpers.CreateMemoPayload
 	if err := c.BodyParser(&requestPayload); err != nil {
 		jsonResp := helpers.JsonResponse{
@@ -44,22 +41,10 @@ func (h *MemoHandler) Create(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).JSON(jsonResp)
 	}
 
-	var memo domain.Memo
-	
-	memo.UserRefer = userId
-	
-	if requestPayload.Content != "" {
-		memo.Content = requestPayload.Content
-		memo.UpdatedAt = time.Now()
-	}
+	refer := helpers.NewRefer()
+	refer.SetUserId(userId)
 
-	if requestPayload.Title != "" {
-		memo.Title = requestPayload.Title
-		memo.UpdatedAt = time.Now()
-	}
-
-
-	if err := h.service.Create(&memo); err != nil {
+	if err := h.service.Create(requestPayload, *refer); err != nil {
 		jsonResp := helpers.JsonResponse{
 			Error:   true,
 			Message: err.Error(),
@@ -76,14 +61,72 @@ func (h *MemoHandler) Create(c *fiber.Ctx) error {
 	return c.Status(http.StatusOK).JSON(jsonResp)
 }
 func (h *MemoHandler) Get(c *fiber.Ctx) error {
-	//memoId, _ := c.ParamsInt("memoId")
+	// get current login id
+	userId, err := h.GetCurrentLoginUserId(c)
+	if err != nil {
+		jsonResp := helpers.JsonResponse{
+			Error:   true,
+			Message: err.Error(),
+			Data:    nil,
+		}
+		return c.Status(http.StatusBadRequest).JSON(jsonResp)
+	}
+
+	// url parsing
+	memoId, err := c.ParamsInt("memoId")
+	if err != nil {
+		jsonResp := helpers.JsonResponse{
+			Error:   true,
+			Message: err.Error(),
+			Data:    nil,
+		}
+		return c.Status(http.StatusBadRequest).JSON(jsonResp)
+	}
+
+	memo, err := h.service.Get(memoId)
+	if err != nil {
+		jsonResp := helpers.JsonResponse{
+			Error:   true,
+			Message: err.Error(),
+			Data:    nil,
+		}
+		return c.Status(http.StatusBadRequest).JSON(jsonResp)
+	}
+
+	// check the owner of the memo ID and the login user are the same
+	if !memo.CheckOwner(userId) {
+		jsonResp := helpers.JsonResponse{
+			Error:   true,
+			Message: err.Error(),
+			Data:    nil,
+		}
+		return c.Status(http.StatusForbidden).JSON(jsonResp)
+	}
+
 	//h.service.
-	return nil
+	jsonResp := helpers.JsonResponse{
+		Error:   false,
+		Message: "success",
+		Data:    memo,
+	}
+	return c.Status(http.StatusOK).JSON(jsonResp)
 }
 
 func (h *MemoHandler) GetAll(c *fiber.Ctx) error {
+	userId, err := h.GetCurrentLoginUserId(c)
+	if err != nil {
+		jsonResp := helpers.JsonResponse{
+			Error:   true,
+			Message: err.Error(),
+			Data:    nil,
+		}
+		return c.Status(http.StatusBadRequest).JSON(jsonResp)
+	}
 
-	memos, err := h.service.GetAll()
+	refer := helpers.NewRefer()
+	refer.SetUserId(userId)
+
+	memos, err := h.service.GetAll(*refer)
 	if err != nil {
 		jsonResp := helpers.JsonResponse{
 			Error:   true,
@@ -102,6 +145,18 @@ func (h *MemoHandler) GetAll(c *fiber.Ctx) error {
 }
 
 func (h *MemoHandler) Update(c *fiber.Ctx) error {
+	// get current login id
+	userId, err := h.GetCurrentLoginUserId(c)
+	if err != nil {
+		jsonResp := helpers.JsonResponse{
+			Error:   true,
+			Message: err.Error(),
+			Data:    nil,
+		}
+		return c.Status(http.StatusBadRequest).JSON(jsonResp)
+	}
+
+	// url parsing
 	memoId, err := c.ParamsInt("memoId")
 	if err != nil {
 		jsonResp := helpers.JsonResponse{
@@ -110,6 +165,26 @@ func (h *MemoHandler) Update(c *fiber.Ctx) error {
 			Data:    nil,
 		}
 		return c.Status(http.StatusBadRequest).JSON(jsonResp)
+	}
+
+	// find memo
+	memo, err := h.service.Get(memoId)
+	if err != nil {
+		jsonResp := helpers.JsonResponse{
+			Error:   true,
+			Message: err.Error(),
+			Data:    nil,
+		}
+		return c.Status(http.StatusBadRequest).JSON(jsonResp)
+	}
+
+	if !memo.CheckOwner(userId) {
+		jsonResp := helpers.JsonResponse{
+			Error:   true,
+			Message: "permission denied",
+			Data:    nil,
+		}
+		return c.Status(http.StatusForbidden).JSON(jsonResp)
 	}
 
 	var updatePayload helpers.UpdateMemoPayload
@@ -123,7 +198,7 @@ func (h *MemoHandler) Update(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).JSON(jsonResp)
 	}
 
-	memo, err := h.service.Update(memoId, updatePayload)
+	memo, err = h.service.Update(memoId, updatePayload)
 
 	if err != nil {
 		jsonResp := helpers.JsonResponse{
@@ -143,14 +218,46 @@ func (h *MemoHandler) Update(c *fiber.Ctx) error {
 }
 
 func (h *MemoHandler) Delete(c *fiber.Ctx) error {
-	memoId, err := c.ParamsInt("memoId")
+	// get current login id
+	userId, err := h.GetCurrentLoginUserId(c)
 	if err != nil {
 		jsonResp := helpers.JsonResponse{
-			Error:   false,
+			Error:   true,
 			Message: err.Error(),
 			Data:    nil,
 		}
 		return c.Status(http.StatusBadRequest).JSON(jsonResp)
+	}
+
+	// url parsing
+	memoId, err := c.ParamsInt("memoId")
+	if err != nil {
+		jsonResp := helpers.JsonResponse{
+			Error:   true,
+			Message: err.Error(),
+			Data:    nil,
+		}
+		return c.Status(http.StatusBadRequest).JSON(jsonResp)
+	}
+
+	// find memo
+	memo, err := h.service.Get(memoId)
+	if err != nil {
+		jsonResp := helpers.JsonResponse{
+			Error:   true,
+			Message: err.Error(),
+			Data:    nil,
+		}
+		return c.Status(http.StatusBadRequest).JSON(jsonResp)
+	}
+
+	if !memo.CheckOwner(userId) {
+		jsonResp := helpers.JsonResponse{
+			Error:   true,
+			Message: "permission denied",
+			Data:    nil,
+		}
+		return c.Status(http.StatusForbidden).JSON(jsonResp)
 	}
 
 	if err := h.service.Delete(memoId); err != nil {

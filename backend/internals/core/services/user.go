@@ -40,14 +40,12 @@ func (s *UserService) Register(email, password, conformPassword string) error {
 	return nil
 }
 
-
 func (s *UserService) Login(email, password string) (jwtToken string, err error) {
 	// password가 같은지 비교
 	user, err := s.repo.GetFindByEmail(email)
 	if err != nil {
 		return "", err
 	}
-
 
 	ok, err := s.repo.PasswordMatches(user.Password, password)
 	if err != nil {
@@ -57,7 +55,6 @@ func (s *UserService) Login(email, password string) (jwtToken string, err error)
 	if !ok {
 		return "", err
 	}
-
 
 	token := jwt.New(jwt.SigningMethodHS256)
 
@@ -73,7 +70,6 @@ func (s *UserService) Login(email, password string) (jwtToken string, err error)
 	return jwtToken, nil
 }
 
-
 func (s *UserService) Update(id int, updateUser helpers.UpdateUserPayload) error {
 	err := s.repo.Update(id, updateUser)
 	if err != nil {
@@ -82,6 +78,6 @@ func (s *UserService) Update(id int, updateUser helpers.UpdateUserPayload) error
 	return nil
 }
 
-func (s *UserService) ValidToken(token *jwt.Token, id int) bool  {
+func (s *UserService) ValidToken(token *jwt.Token, id int) bool {
 	return s.repo.ValidToken(token, id)
 }
